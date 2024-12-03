@@ -209,11 +209,48 @@ public class StudentManagementGUI extends JFrame {
         });
 
 
+        // Delete Student Tab
+        JPanel deletePanel = new JPanel();
+        deletePanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Center components with padding
 
+        JLabel deleteIdLabel = new JLabel("Enter Student ID:");
+        deletePanel.add(deleteIdLabel);
 
+        JTextField deleteIdField = new JTextField(20);  // Smaller width (20 characters wide)
+        deletePanel.add(deleteIdField);
 
+        // Spacer for better visual
+        deletePanel.add(Box.createVerticalStrut(10));
 
+        JButton deleteButton = new JButton("Delete Student");
+        deletePanel.add(deleteButton);
 
+        deleteButton.addActionListener(e -> {
+            String id = deleteIdField.getText().trim();
+            if (id.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Error: Student ID is required to delete.");
+                return;
+            }
+
+            try {
+                // Load all students
+                List<Student> students = XMLHandler.loadStudents();
+                boolean found = students.removeIf(student -> student.getId().equals(id));
+
+                if (!found) {
+                    JOptionPane.showMessageDialog(this, "Error: Student ID not found.");
+                    return;
+                }
+
+                // Save updated list back to the XML file
+                XMLHandler.saveStudents(students);
+                JOptionPane.showMessageDialog(this, "Student deleted successfully!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error !!" + ex.getMessage());
+            }
+        });
+
+        
 
         // panel for viewing the XML file
         JPanel viewPanel = new JPanel(new BorderLayout());
@@ -387,6 +424,8 @@ public class StudentManagementGUI extends JFrame {
         tabbedPane.add("Add Student", addPanel);
         tabbedPane.add("Update Student", updatePanel);
         tabbedPane.add("Search Student", searchPanel);
+        tabbedPane.add("Delete Student", deletePanel);
+
 
 
         add(tabbedPane, BorderLayout.CENTER);
