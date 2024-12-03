@@ -152,6 +152,7 @@ public class StudentManagementGUI extends JFrame {
                 if (id.isEmpty()) {
                     JOptionPane.showMessageDialog(this, "Error: Student ID is required to update.");
                     return;
+    
                 }
 
                 // Load all students
@@ -209,7 +210,46 @@ public class StudentManagementGUI extends JFrame {
         });
 
 
-
+        // Delete Student Tab 
+        JPanel deletePanel = new JPanel(); 
+        deletePanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10)); // Center components with padding 
+ 
+        JLabel deleteIdLabel = new JLabel("Enter Student ID:"); 
+        deletePanel.add(deleteIdLabel); 
+ 
+        JTextField deleteIdField = new JTextField(20);  // Smaller width (20 characters wide) 
+        deletePanel.add(deleteIdField); 
+ 
+        // Spacer for better visual 
+        deletePanel.add(Box.createVerticalStrut(10)); 
+ 
+        JButton deleteButton = new JButton("Delete Student"); 
+        deletePanel.add(deleteButton); 
+ 
+        deleteButton.addActionListener(e -> { 
+            String id = deleteIdField.getText().trim(); 
+            if (id.isEmpty()) { 
+                JOptionPane.showMessageDialog(this, "Error: Student ID is required to delete."); 
+                return; 
+            } 
+ 
+            try { 
+                // Load all students 
+                List<Student> students = XMLHandler.loadStudents(); 
+                boolean found = students.removeIf(student -> student.getId().equals(id)); 
+ 
+                if (!found) { 
+                    JOptionPane.showMessageDialog(this, "Error: Student ID not found."); 
+                    return; 
+                } 
+ 
+                // Save updated list back to the XML file 
+                XMLHandler.saveStudents(students); 
+                JOptionPane.showMessageDialog(this, "Student deleted successfully!"); 
+            } catch (Exception ex) { 
+                JOptionPane.showMessageDialog(this, "Error !!" + ex.getMessage()); 
+            } 
+        });
 
 
 
@@ -250,8 +290,8 @@ public class StudentManagementGUI extends JFrame {
             }
         });
 
-    //  panel for searching students
-        JPanel searchPanel = new JPanel(new GridLayout(9, 2, 10, 10));
+        // Panel for searching and sorting students
+        JPanel searchPanel = new JPanel(new GridLayout(11, 2, 10, 10));
 
         JLabel searchIdLabel = new JLabel("Student ID:");
         JTextField searchIdField = new JTextField();
@@ -274,12 +314,20 @@ public class StudentManagementGUI extends JFrame {
         JLabel searchAddressLabel = new JLabel("Address:");
         JTextField searchAddressField = new JTextField();
 
+        // Sorting inputs
+        JLabel sortAttributeLabel = new JLabel("Sort By (id, firstname, lastname, gender, gpa, level, address):");
+        JTextField sortAttributeField = new JTextField();
+
+        JLabel sortOrderLabel = new JLabel("Sort Order (asc/desc):");
+        JTextField sortOrderField = new JTextField();
+
         JButton searchButton = new JButton("Search");
 
         JTextArea searchResultsArea = new JTextArea(10, 30);
         searchResultsArea.setEditable(false);
         JScrollPane resultsScrollPane = new JScrollPane(searchResultsArea);
 
+        // Adding components to the panel
         searchPanel.add(searchIdLabel);
         searchPanel.add(searchIdField);
         searchPanel.add(searchFirstNameLabel);
@@ -294,13 +342,15 @@ public class StudentManagementGUI extends JFrame {
         searchPanel.add(searchLevelField);
         searchPanel.add(searchAddressLabel);
         searchPanel.add(searchAddressField);
-        searchPanel.add(new JLabel()); 
+        searchPanel.add(sortAttributeLabel);
+        searchPanel.add(sortAttributeField);
+        searchPanel.add(sortOrderLabel);
+        searchPanel.add(sortOrderField);
+        searchPanel.add(new JLabel()); // Spacer
         searchPanel.add(searchButton);
-//        searchPanel.add(new JLabel()); // Spacer
         searchPanel.add(resultsScrollPane);
 
-
-
+        // Search and sort button action listener
         searchButton.addActionListener(e -> {
             try {
                 List<Student> students = XMLHandler.loadStudents();
@@ -313,8 +363,12 @@ public class StudentManagementGUI extends JFrame {
                 String searchLevelText = searchLevelField.getText().trim();
                 String searchAddress = searchAddressField.getText().trim();
 
+                String sortAttribute = sortAttributeField.getText().trim().toLowerCase();
+                String sortOrder = sortOrderField.getText().trim().toLowerCase();
+
                 List<Student> matchedStudents = new ArrayList<>();
 
+                // Filtering logic
                 for (Student student : students) {
                     boolean matches = true;
 
@@ -359,6 +413,43 @@ public class StudentManagementGUI extends JFrame {
                     }
                 }
 
+                // Sorting logic
+                matchedStudents.sort((s1, s2) -> {
+                    int comparison = 0;
+
+                    switch (sortAttribute) {
+                        case "id":
+                            comparison = s1.getId().compareTo(s2.getId());
+                            break;
+                        case "firstname":
+                            comparison = s1.getFirstName().compareTo(s2.getFirstName());
+                            break;
+                
+                        case "lastname":
+                            comparison = s1.getLastName().compareTo(s2.getLastName());
+                            break;
+                        case "gender":
+                            comparison = s1.getGender().compareTo(s2.getGender());
+                            break;
+                        case "gpa":
+                            comparison = Double.compare(s1.getGpa(), s2.getGpa());
+                            break;
+                        case "level":
+                            comparison = Integer.compare(s1.getLevel(), s2.getLevel());
+                            break;
+                        case "address":
+                            comparison = s1.getAddress().compareTo(s2.getAddress());
+                            break;
+                        default:
+                            comparison = s1.getId().compareTo(s2.getId());
+                    }
+
+                    if (sortOrder.isEmpty()) return comparison;
+
+                    return sortOrder.equals("asc") ? comparison : -comparison;
+                });
+
+                // Displaying results
                 StringBuilder resultsContent = new StringBuilder();
                 resultsContent.append("Found ").append(matchedStudents.size()).append(" students:\n\n");
 
@@ -376,9 +467,10 @@ public class StudentManagementGUI extends JFrame {
                 searchResultsArea.setText(resultsContent.toString());
 
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error searching students: " + ex.getMessage());
+                JOptionPane.showMessageDialog(null, "Error searching or sorting students: " + ex.getMessage());
             }
         });
+
 
 
 
@@ -387,6 +479,7 @@ public class StudentManagementGUI extends JFrame {
         tabbedPane.add("Add Student", addPanel);
         tabbedPane.add("Update Student", updatePanel);
         tabbedPane.add("Search Student", searchPanel);
+        tabbedPane.add("Search Delete", deletePanel);
 
 
         add(tabbedPane, BorderLayout.CENTER);
